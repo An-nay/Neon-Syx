@@ -58,10 +58,56 @@ def _read_text_with_fallback(file_path: str) -> str:
     return data.decode(encoding, errors='replace')
 
 
+def _ocr_pdf(file_path: str) -> str:
+    """
+    OCR fallback for image-based PDFs using pytesseract.
+    Called automatically when normal text extraction yields < 150 characters.
+
+    Args:
+        file_path: Path to the PDF file
+
+    Returns:
+        OCR extracted text
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Text extraction yielded < 150 characters — falling back to OCR for: {file_path}")
+
+    try:
+        import fitz
+        from PIL import Image
+        import pytesseract
+        import io
+    except ImportError as e:
+        raise ImportError(
+            f"OCR dependencies missing: {e}. "
+            "Install with: pip install pytesseract pillow && brew install tesseract (Mac) "
+            "or apt-get install tesseract-ocr (Linux)"
+        )
+
+    text_parts = []
+    with fitz.open(file_path) as doc:
+        for i, page in enumerate(doc):
+            # Render page to image at 200 DPI for good OCR accuracy
+            pix = page.get_pixmap(dpi=200)
+            img = Image.open(io.BytesIO(pix.tobytes("png")))
+            page_text = pytesseract.image_to_string(img)
+            if page_text.strip():
+                text_parts.append(page_text)
+            logger.info(f"OCR page {i + 1}/{len(doc)}: {len(page_text)} characters extracted")
+
+    result = "\n\n".join(text_parts)
+    logger.info(f"OCR complete: {len(result)} total characters extracted")
+    return result
+
+
 class FileParser:
     """File Parser"""
 
     SUPPORTED_EXTENSIONS = {'.pdf', '.md', '.markdown', '.txt'}
+
+    # Minimum character threshold — below this, OCR is triggered for PDFs
+    OCR_THRESHOLD = 150
 
     @classmethod
     def extract_text(cls, file_path: str) -> str:
@@ -93,9 +139,13 @@ class FileParser:
 
         raise ValueError(f"Cannot handle file format: {suffix}")
 
-    @staticmethod
-    def _extract_from_pdf(file_path: str) -> str:
-        """Extract text from PDF"""
+    @classmethod
+    def _extract_from_pdf(cls, file_path: str) -> str:
+        """
+        Extract text from PDF.
+        If extracted text is < OCR_THRESHOLD characters, automatically
+        falls back to OCR for image-based PDFs (e.g. exported from PowerPoint).
+        """
         try:
             import fitz  # PyMuPDF
         except ImportError:
@@ -108,7 +158,13 @@ class FileParser:
                 if text.strip():
                     text_parts.append(text)
 
-        return "\n\n".join(text_parts)
+        extracted = "\n\n".join(text_parts)
+
+        # If extracted text is too short, it's likely an image-based PDF — use OCR
+        if len(extracted.strip()) < cls.OCR_THRESHOLD:
+            extracted = _ocr_pdf(file_path)
+
+        return extracted
 
     @staticmethod
     def _extract_from_md(file_path: str) -> str:
@@ -186,4 +242,3 @@ def split_text_into_chunks(
         start = end - overlap if end < len(text) else len(text)
 
     return chunks
-

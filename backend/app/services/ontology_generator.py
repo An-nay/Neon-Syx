@@ -20,6 +20,12 @@ We are building a **social media opinion simulation system**. In this system:
 - Entities influence each other, retweet, comment, and respond
 - We need to simulate the reactions of various parties in opinion events and information dissemination paths
 
+In this specific use case, the simulation is focused on **product launches and product-related discussions**.  
+Therefore:
+- Entities should represent stakeholders who would realistically react to a product (e.g., users, companies, media, influencers, experts, regulators)
+- Interactions should reflect how opinions about a product spread, evolve, and influence others
+- The ontology should support modeling both **positive, neutral, and negative reactions** to product-related events
+
 Therefore, **entities must be real-world entities that can voice and interact on social media**:
 
 **Can be**:

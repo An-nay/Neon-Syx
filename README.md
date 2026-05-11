@@ -1,103 +1,180 @@
-<div align="center">
+# NEON-SYX
+### A fully local multi-agent simulation engine for modeling public opinion and social dynamics
 
-<img src="./static/image/mirofish-offline-banner.png" alt="MiroFish Offline" width="100%"/>
+> Built on the architectural foundations of MiroFish, reengineered for pre-launch product intelligence.
 
-# MiroFish-Offline
+---
 
-**Fully local fork of [MiroFish](https://github.com/666ghj/MiroFish) — no cloud APIs required. English UI.**
+## What is NEON-SYX?
 
-*A multi-agent swarm intelligence engine that simulates public opinion, market sentiment, and social dynamics. Entirely on your hardware.*
+NEON-SYX is a **fully local, privacy-preserving multi-agent simulation platform** that predicts how the public will react to a product — *before it launches*.
 
-[![GitHub Stars](https://img.shields.io/github/stars/nikmcfly/MiroFish-Offline?style=flat-square&color=DAA520)](https://github.com/nikmcfly/MiroFish-Offline/stargazers)
-[![GitHub Forks](https://img.shields.io/github/forks/nikmcfly/MiroFish-Offline?style=flat-square)](https://github.com/nikmcfly/MiroFish-Offline/network)
-[![Docker](https://img.shields.io/badge/Docker-Build-2496ED?style=flat-square&logo=docker&logoColor=white)](https://hub.docker.com/)
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square)](./LICENSE)
+Instead of running surveys or focus groups after a product is built, NEON-SYX lets you upload a product document (pitch deck, spec sheet, launch brief) and simulates hundreds of AI agents — each with distinct personalities, biases, and social behaviours — debating the product on a synthetic social media platform.
 
-</div>
+The result: structured sentiment reports, influence maps, and stakeholder reaction models, all generated in under 4 hours, all on local infrastructure with no data leaving your environment.
 
-## What is this?
+---
 
-MiroFish is a multi-agent simulation engine: upload any document (press release, policy draft, financial report), and it generates hundreds of AI agents with unique personalities that simulate the public reaction on social media. Posts, arguments, opinion shifts — hour by hour.
+## Key Features
 
-The [original MiroFish](https://github.com/666ghj/MiroFish) was built for the Chinese market (Chinese UI, Zep Cloud for knowledge graphs, DashScope API). This fork makes it **fully local and fully English**:
+- **Zero cloud dependency** — all processing runs locally via Ollama + Neo4j + Docker
+- **Document-agnostic** — accepts PDF, Markdown, or plain text product specifications
+- **Hundreds of AI agents** — each with OCEAN personality traits, psychographic profiles, and graph-backed memory
+- **Knowledge graph memory** — Neo4j stores entities, relationships, and agent interactions with vector + BM25 hybrid retrieval
+- **5-stage deterministic pipeline** — from document ingestion to interactive agent Q&A
+- **Privacy-preserving** — sensitive product documents never leave your controlled environment
+- **Kaggle GPU proxy** — run production-quality LLMs on Kaggle's T4 GPUs via ngrok tunnel, no local GPU required
 
-| Original MiroFish | MiroFish-Offline |
-|---|---|
-| Chinese UI | **English UI** (1,000+ strings translated) |
-| Zep Cloud (graph memory) | **Neo4j Community Edition 5.15** |
-| DashScope / OpenAI API (LLM) | **Ollama** (qwen2.5, llama3, etc.) |
-| Zep Cloud embeddings | **nomic-embed-text** via Ollama |
-| Cloud API keys required | **Zero cloud dependencies** |
+---
 
-## Workflow
+## Five-Stage Pipeline
 
-1. **Graph Build** — Extracts entities (people, companies, events) and relationships from your document. Builds a knowledge graph with individual and group memory via Neo4j.
-2. **Env Setup** — Generates hundreds of agent personas, each with unique personality, opinion bias, reaction speed, influence level, and memory of past events.
-3. **Simulation** — Agents interact on simulated social platforms: posting, replying, arguing, shifting opinions. The system tracks sentiment evolution, topic propagation, and influence dynamics in real time.
-4. **Report** — A ReportAgent analyzes the post-simulation environment, interviews a focus group of agents, searches the knowledge graph for evidence, and generates a structured analysis.
-5. **Interaction** — Chat with any agent from the simulated world. Ask them why they posted what they posted. Full memory and personality persists.
-
-## Screenshot
-
-<div align="center">
-<img src="./static/image/mirofish-offline-screenshot.jpg" alt="MiroFish Offline — English UI" width="100%"/>
-</div>
-
-## Quick Start
-
-### Prerequisites
-
-- Docker & Docker Compose (recommended), **or**
-- Python 3.11+, Node.js 18+, Neo4j 5.15+, Ollama
-
-### Option A: Docker (easiest)
-
-```bash
-git clone https://github.com/nikmcfly/MiroFish-Offline.git
-cd MiroFish-Offline
-cp .env.example .env
-
-# Start all services (Neo4j, Ollama, MiroFish)
-docker compose up -d
-
-# Pull the required models into Ollama
-docker exec mirofish-ollama ollama pull qwen2.5:32b
-docker exec mirofish-ollama ollama pull nomic-embed-text
+```
+Stage 1 — Graph Build       Upload document → extract ontology → build Neo4j knowledge graph
+Stage 2 — Env Setup         Generate agent personas from graph entities
+Stage 3 — Simulation        Run multi-agent social media simulation (Reddit-style)
+Stage 4 — Report            Generate structured sentiment analysis + risk clusters
+Stage 5 — Interaction       Chat directly with agents using full graph memory
 ```
 
-Open `http://localhost:3000` — that's it.
+---
 
-### Option B: Manual
+## Technology Stack
 
-**1. Start Neo4j**
+| Layer | Technology | Version | Purpose |
+|---|---|---|---|
+| Frontend | Vue.js / Vite | 3.5.25 / 7.2.7 | Reactive SPA with D3.js graph visualisation |
+| Backend | Flask + Python | Latest / 3.11+ | REST API, pipeline orchestration |
+| Graph DB | Neo4j CE | 5.15 | Knowledge graph, vector + full-text index |
+| LLM Runtime | Ollama + qwen2.5 | 14b | Agent generation, NER/RE, report synthesis |
+| Embeddings | nomic-embed-text | Latest | 768-dimensional vector embeddings |
+| Deployment | Docker Compose | Latest | Multi-container orchestration |
+
+---
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────┐
+│                   Frontend                       │
+│         Vue.js SPA (port 3000)                  │
+│    Home.vue → Process.vue → Step1–5.vue         │
+└────────────────────┬────────────────────────────┘
+                     │ HTTP
+┌────────────────────▼────────────────────────────┐
+│                   Backend                        │
+│          Flask REST API (port 5001)             │
+│   /api/graph   /api/simulation   /api/report    │
+└──────────┬──────────────────┬───────────────────┘
+           │                  │
+┌──────────▼──────┐  ┌────────▼────────────────────┐
+│   Neo4j CE 5.15 │  │   Ollama (via ngrok tunnel) │
+│  port 7687/7474 │  │   qwen2.5:14b + nomic-embed │
+│  Knowledge Graph│  │   Running on Kaggle T4 GPUs │
+└─────────────────┘  └─────────────────────────────┘
+```
+
+---
+
+## Prerequisites
+
+- Docker Desktop
+- Python 3.11+
+- Node.js 18+
+- A [Kaggle](https://kaggle.com) account with GPU access
+- A free [ngrok](https://dashboard.ngrok.com) account + auth token
+
+---
+
+## Setup Instructions
+
+### 1. Clone the repository
 
 ```bash
-docker run -d --name neo4j \
+git clone https://github.com/YOUR_USERNAME/neon-syx.git
+cd neon-syx
+```
+
+### 2. Set up the Kaggle Ollama server
+
+The LLM runs on Kaggle's free T4 GPUs. You need to set this up once and re-run it each session.
+
+**First time only — save the model to a Kaggle dataset:**
+
+Run `Neon-Syx-save-14b-model-dataset.ipynb` on Kaggle to download and save `qwen2.5:14b` and `nomic-embed-text` to your personal Kaggle dataset. This takes ~20 minutes.
+
+**Every session — start the Kaggle server:**
+
+Open the main Kaggle notebook `Neon-Syx-kaggle-model.ipynb` and run all cells in order:
+
+```
+Cell 1 — Check GPU availability
+Cell 2 — Install Ollama engine
+Cell 3 — Restore models from your saved dataset
+Cell 4 — Start Ollama server
+Cell 5 — Smoke test (verify models load correctly)
+Cell 6 — Start ngrok tunnel → copy the output URL
+Cell 7 — Keep-alive loop (leave running)
+```
+
+Copy the printed `.env` values from Cell 6.
+
+### 3. Configure environment variables
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with the ngrok URL from your Kaggle notebook:
+
+```env
+# LLM — Kaggle Ollama via ngrok tunnel
+LLM_API_KEY=ollama
+LLM_BASE_URL=https://YOUR-NGROK-URL.ngrok-free.app/v1
+LLM_MODEL_NAME=qwen2.5:14b
+
+# Neo4j — local Docker
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=mirofish
+
+# Embeddings — also via Kaggle tunnel
+EMBEDDING_MODEL=nomic-embed-text
+EMBEDDING_BASE_URL=https://YOUR-NGROK-URL.ngrok-free.app
+
+# Optional: increase for large documents
+OLLAMA_NUM_CTX=16384
+LLM_TIMEOUT=600
+```
+
+### 4. Start Neo4j via Docker
+
+```bash
+docker run -d \
+  --name neo4j-neon \
+  --env NEO4J_AUTH=neo4j/mirofish \
+  --env NEO4J_server_memory_heap_max__size=1g \
   -p 7474:7474 -p 7687:7687 \
-  -e NEO4J_AUTH=neo4j/mirofish \
-  neo4j:5.15-community
+  neo4j:5.15
 ```
 
-**2. Start Ollama & pull models**
+Or using Docker Compose:
 
 ```bash
-ollama serve &
-ollama pull qwen2.5:32b      # LLM (or qwen2.5:14b for less VRAM)
-ollama pull nomic-embed-text  # Embeddings (768d)
+docker compose up -d neo4j
 ```
 
-**3. Configure & run backend**
+### 5. Start the backend
 
 ```bash
-cp .env.example .env
-# Edit .env if your Neo4j/Ollama are on non-default ports
-
 cd backend
 pip install -r requirements.txt
 python run.py
 ```
 
-**4. Run frontend**
+Backend runs at `http://localhost:5001`
+
+### 6. Start the frontend
 
 ```bash
 cd frontend
@@ -105,101 +182,151 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+Frontend runs at `http://localhost:3000`
 
-## Configuration
+---
 
-All settings are in `.env` (copy from `.env.example`):
+## Running a Simulation
 
-```bash
-# LLM — points to local Ollama (OpenAI-compatible API)
-LLM_API_KEY=ollama
-LLM_BASE_URL=http://localhost:11434/v1
-LLM_MODEL_NAME=qwen2.5:32b
+1. Open `http://localhost:3000`
+2. Upload a product document (PDF, Markdown, or plain text)
+3. Enter a simulation requirement (e.g. *"Simulate public reaction to this product launch on social media"*)
+4. Click through the 5 stages:
+   - **Stage 1** — Watch the knowledge graph build in real time (D3.js visualisation)
+   - **Stage 2** — Review and configure generated agent personas
+   - **Stage 3** — Run the simulation (72 rounds ≈ ~2 hours)
+   - **Stage 4** — Read the structured sentiment report
+   - **Stage 5** — Chat directly with individual agents
 
-# Neo4j
-NEO4J_URI=bolt://localhost:7687
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=mirofish
+---
 
-# Embeddings
-EMBEDDING_MODEL=nomic-embed-text
-EMBEDDING_BASE_URL=http://localhost:11434
+## NLP Techniques Used
+
+**Named Entity Recognition (NER)** — Zero-shot and few-shot extraction of domain-specific entities (ProductFeature, TargetAudience, MarketPainPoint, Competitor) via local LLM calls.
+
+**Relation Extraction (RE)** — Triplet-level extraction of directional semantic relationships (e.g. Feature A → SOLVES → Pain Point B), stored as typed Neo4j edges.
+
+**Hybrid RAG** — Retrieval-Augmented Generation using weighted fusion of `0.7 × vector similarity + 0.3 × BM25` keyword score for agent memory queries.
+
+**Agentic Prompt Engineering** — Each agent receives a structured system prompt containing OCEAN personality traits, socioeconomic bias, domain scepticism level, and graph-derived interests — all extracted from the input document.
+
+**Temporal Sentiment Analysis** — Agent interactions (reply, upvote, downvote) are logged as time-stamped weighted signals and committed to Neo4j as temporal edges, enabling chronological sentiment tracking across the simulation clock.
+
+---
+
+## Kaggle Proxy Architecture
+
+NEON-SYX uses Kaggle's free T4 GPU infrastructure to run the LLM, solving the local VRAM constraint without requiring a dedicated GPU machine.
+
+```
+Local (backend + Neo4j)
+        │
+        │ HTTPS via ngrok tunnel
+        ▼
+Kaggle Notebook (Ollama + qwen2.5:14b)
+        │
+        └── T4 GPU x2 (30GB total VRAM)
 ```
 
-Works with any OpenAI-compatible API — swap Ollama for Claude, GPT, or any other provider by changing `LLM_BASE_URL` and `LLM_API_KEY`.
+Because `LLM_BASE_URL` abstracts the endpoint entirely, switching between local Ollama and the Kaggle proxy requires only a one-line `.env` change — no code modifications.
 
-## Architecture
+**⚠️ Important:** The ngrok URL may change every time you restart the Kaggle notebook. Update `.env` and restart the Flask backend when this happens.
 
-This fork introduces a clean abstraction layer between the application and the graph database:
+---
+
+## Experimental Results
+
+Validated against the **Airbnb original pitch deck** as a historical benchmark (known real-world reception, documented investor objections).
+
+| Metric | Result |
+|---|---|
+| Agents generated | 34 (exact match to expected) |
+| Reality seed topics | 73 |
+| Simulation rounds | 72 (72-hour horizon) |
+| Total pipeline runtime | ~4 hours |
+| Risk clusters identified | 5 (regulatory, competition, customer scepticism, management alignment, technology) |
+
+The simulation organically surfaced regulatory exposure and trust deficit as leading concerns — aligning with Airbnb's documented early-market friction points — without any explicit prompting toward these categories.
+
+---
+
+## Project Structure
 
 ```
-┌─────────────────────────────────────────┐
-│              Flask API                   │
-│  graph.py  simulation.py  report.py     │
-└──────────────┬──────────────────────────┘
-               │ app.extensions['neo4j_storage']
-┌──────────────▼──────────────────────────┐
-│           Service Layer                  │
-│  EntityReader  GraphToolsService         │
-│  GraphMemoryUpdater  ReportAgent         │
-└──────────────┬──────────────────────────┘
-               │ storage: GraphStorage
-┌──────────────▼──────────────────────────┐
-│         GraphStorage (abstract)          │
-│              │                            │
-│    ┌─────────▼─────────┐                │
-│    │   Neo4jStorage     │                │
-│    │  ┌───────────────┐ │                │
-│    │  │ EmbeddingService│ ← Ollama       │
-│    │  │ NERExtractor   │ ← Ollama LLM   │
-│    │  │ SearchService  │ ← Hybrid search │
-│    │  └───────────────┘ │                │
-│    └───────────────────┘                │
-└─────────────────────────────────────────┘
-               │
-        ┌──────▼──────┐
-        │  Neo4j CE   │
-        │  5.15       │
-        └─────────────┘
+neon-syx/
+├── backend/
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── graph.py          # Stage 1: document upload, ontology, graph build
+│   │   │   ├── simulation.py     # Stages 2-3: agent generation, simulation control
+│   │   │   └── report.py         # Stage 4-5: report generation, agent chat
+│   │   ├── services/
+│   │   │   ├── ontology_generator.py     # LLM-based ontology generation
+│   │   │   ├── graph_builder.py          # NER/RE pipeline, Neo4j population
+│   │   │   ├── oasis_profile_generator.py # Agent persona construction
+│   │   │   ├── simulation_runner.py      # OASIS simulation execution
+│   │   │   ├── report_agent.py           # Map-reduce report synthesis
+│   │   │   └── graph_memory_updater.py   # Real-time Neo4j interaction logging
+│   │   ├── storage/
+│   │   │   ├── graph_storage.py          # Abstract GraphStorage interface
+│   │   │   ├── neo4j_storage.py          # Neo4j concrete implementation
+│   │   │   ├── embedding_service.py      # nomic-embed-text wrapper
+│   │   │   ├── ner_extractor.py          # Named entity extraction
+│   │   │   └── search_service.py         # Hybrid vector + BM25 retrieval
+│   │   ├── utils/
+│   │   │   └── llm_client.py             # OpenAI-compatible LLM wrapper
+│   │   └── config.py                     # Environment configuration
+│   └── scripts/
+│       ├── file_parser.py                # PDF/Markdown ingestion + OCR fallback
+│       └── run_reddit_simulation.py      # OASIS simulation entry point
+├── frontend/
+│   └── src/
+│       ├── views/
+│       │   ├── Home.vue                  # Document upload + prompt entry
+│       │   └── Process.vue              # 5-stage workflow orchestrator
+│       └── components/
+│           ├── Step1.vue – Step5.vue    # Stage-specific UI components
+│           └── HistoryDatabase.vue      # Session persistence + resume
+├── Kaggle notebooks/
+│   ├── Neon-Syx-kaggle-model.ipynb            # Main Kaggle server notebook
+│   └── Neon-Syx-save-14b-model-dataset.ipynb  # One-time model save notebook
+├── docker-compose.yml
+└── README.md
 ```
 
-**Key design decisions:**
+---
 
-- `GraphStorage` is an abstract interface — swap Neo4j for any other graph DB by implementing one class
-- Dependency injection via Flask `app.extensions` — no global singletons
-- Hybrid search: 0.7 × vector similarity + 0.3 × BM25 keyword search
-- Synchronous NER/RE extraction via local LLM (replaces Zep's async episodes)
-- All original dataclasses and LLM tools (InsightForge, Panorama, Agent Interviews) preserved
+## Troubleshooting
 
-## Hardware Requirements
+**Ontology generation times out**
+- Verify the ngrok tunnel is active: `curl https://YOUR-URL.ngrok-free.app/api/tags`
+- Check the model is loaded on Kaggle: run `!ollama ps` in a new cell
+- Ensure `LLM_TIMEOUT=600` is set in `.env`
 
-| Component | Minimum | Recommended |
-|---|---|---|
-| RAM | 16 GB | 32 GB |
-| VRAM (GPU) | 10 GB (14b model) | 24 GB (32b model) |
-| Disk | 20 GB | 50 GB |
-| CPU | 4 cores | 8+ cores |
+**ngrok tunnel goes offline**
+- Re-run the ngrok cell in your Kaggle notebook
+- Update `LLM_BASE_URL` and `EMBEDDING_BASE_URL` in `.env`
+- Restart the Flask backend: `python run.py`
 
-CPU-only mode works but is significantly slower for LLM inference. For lighter setups, use `qwen2.5:14b` or `qwen2.5:7b`.
+**Model unloads from GPU after inactivity**
+- The keep-alive cell in the Kaggle notebook pings the model every 20 seconds.
+- Make sure that cell is still running (it runs an infinite loop — keep the tab and session alive)
 
-## Use Cases
+**Neo4j vector index warning on startup**
+```
+Vector indexes are not available on relationships
+```
+This is a known Neo4j CE limitation — relationship embeddings aren't indexed but this does not affect core functionality. The warning can be safely ignored.
 
-- **PR crisis testing** — simulate the public reaction to a press release before publishing
-- **Trading signal generation** — feed financial news and observe simulated market sentiment
-- **Policy impact analysis** — test draft regulations against simulated public response
-- **Creative experiments** — someone fed it a classical Chinese novel with a lost ending; the agents wrote a narratively consistent conclusion
+---
 
-## License
+## Acknowledgements
 
-AGPL-3.0 — same as the original MiroFish project. See [LICENSE](./LICENSE).
+- [MiroFish](https://github.com/mirofish) — original open-source multi-agent simulation engine this project forks from
+- [OASIS (CAMEL-AI)](https://github.com/camel-ai/oasis) — agent execution runtime
+- [Ollama](https://ollama.com) — local LLM inference server
+- [Neo4j Community Edition](https://neo4j.com) — graph database
+- [Qwen2.5](https://huggingface.co/Qwen) — language model family
+- [nomic-embed-text](https://www.nomic.ai) — embedding model
 
-## Credits & Attribution
-
-This is a modified fork of [MiroFish](https://github.com/666ghj/MiroFish) by [666ghj](https://github.com/666ghj), originally supported by [Shanda Group](https://www.shanda.com/). The simulation engine is powered by [OASIS](https://github.com/camel-ai/oasis) from the CAMEL-AI team.
-
-**Modifications in this fork:**
-- Backend migrated from Zep Cloud to local Neo4j CE 5.15 + Ollama
-- Entire frontend translated from Chinese to English (20 files, 1,000+ strings)
-- All Zep references replaced with Neo4j across the UI
-- Rebranded to MiroFish Offline
+---
